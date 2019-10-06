@@ -1,0 +1,235 @@
+---
+title: "Why are U.S. Flights Becoming Longer at Some Airports?"
+author: "Max Woolf (@minimaxir)"
+output:
+  html_notebook:
+    highlight: tango
+    mathjax: null
+    number_sections: yes
+    theme: spacelab
+    toc: True
+---
+
+This notebook is licensed under the MIT License. If you use the code or data visualization designs contained within this notebook, it would be greatly appreciated if proper attribution is given back to this notebook and/or myself. Thanks! :)
+
+## Setup
+
+```{r}
+library(tidyverse)
+library(scales)
+library(lubridate)
+library(bigrquery)
+
+sessionInfo()
+```
+
+```{r}
+# Switch to your own GCP project ID
+#project_id <- "<PROJECT_ID>"  
+```
+
+
+```{r}
+theme_set(theme_minimal(base_size=9, base_family="Source Sans Pro") +
+            theme(plot.title = element_text(family="Source Sans Pro Bold", margin=margin(t = -0.1, b = 0.1, unit='cm'), size=12),
+                  axis.title.x = element_text(),
+                  axis.title.y = element_text(),
+                  axis.text.y = element_text(family="Roboto Condensed"),
+                  axis.text.x = element_text(family="Roboto Condensed"),
+                  plot.subtitle = element_text(family="Source Sans Pro Semibold", color="#969696", size=8),
+                  plot.caption = element_text(color="#969696"),
+                  legend.title = element_text(),
+                  legend.key.width = unit(0.25, unit='cm')))
+```
+
+
+# EDA
+
+## SFO Flight Duration
+
+```{r}
+query <- "#standardSQL
+SELECT Year, Month, num_flights,
+time_q[OFFSET(5)] AS q_5,
+time_q[OFFSET(25)] AS q_25,
+time_q[OFFSET(50)] AS q_50,
+time_q[OFFSET(75)] AS q_75,
+time_q[OFFSET(95)] AS q_95
+FROM (
+SELECT Year, Month,
+  COUNT(*) as num_flights,
+  APPROX_QUANTILES(ActualElapsedTime, 100) AS time_q
+FROM `fh-bigquery.flights.ontime_201903`
+WHERE Origin = 'SFO'
+AND FlightDate_year > '2010-01-01'
+GROUP BY 1, 2
+)
+ORDER BY Year, Month"
+
+df <- bq_project_query(project_id, query) %>% bq_table_download()
+
+df_tf <- df %>%
+          mutate(date = ymd(paste(Year, Month, "1")))
+
+df_tf %>% head(10)
+```
+
+```{r}
+plot <- ggplot(df_tf, aes(x=date, lower = q_25, upper = q_75, middle=q_50, ymin=q_5, ymax=q_95, fill=factor(Year))) +
+  geom_boxplot(stat="identity") +
+  scale_fill_hue(l=75, guide=F) +
+  scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
+  scale_y_continuous(breaks=seq(0, 360, 60), labels=seq(0, 6, 1)) +
+  labs(title="Distirbution of Flight Times of Flights out of SFO, by Month",
+       subtitle="via US DoT. Box bounds are 25th/75th percentiles, whiskers are 5th/95th percentiles.",
+       y='Total Elapsed Flight Time (Hours)',
+       fill='',
+       color='') +
+  theme(legend.position = 'top',
+        legend.key.height = unit(0.25, unit='cm'),
+        legend.margin = margin(c(0, 0, -0.2, 0), unit='cm'),
+        axis.title.x = element_blank()
+  )
+ggsave('sfo_flight_duration.png', plot, width=6, height=4)
+```
+
+## SFO Flight Speed
+
+```{r}
+query <- "#standardSQL
+SELECT Year, Month, num_flights,
+time_q[OFFSET(5)] AS q_5,
+time_q[OFFSET(25)] AS q_25,
+time_q[OFFSET(50)] AS q_50,
+time_q[OFFSET(75)] AS q_75,
+time_q[OFFSET(95)] AS q_95
+FROM (
+SELECT Year, Month,
+  COUNT(*) as num_flights,
+  APPROX_QUANTILES(Distance/(AirTime/60), 100) AS time_q
+FROM `fh-bigquery.flights.ontime_201903`
+WHERE Origin = 'SFO'
+AND FlightDate_year > '2010-01-01'
+GROUP BY 1, 2
+)
+ORDER BY Year, Month"
+
+df <- bq_project_query(project_id, query) %>% bq_table_download()
+
+df_tf <- df %>%
+          mutate(date = ymd(paste(Year, Month, "1")))
+
+df_tf %>% head(10)
+```
+
+```{r}
+plot <- ggplot(df_tf, aes(x=date, lower = q_25, upper = q_75, middle=q_50, ymin=q_5, ymax=q_95, fill=factor(Year))) +
+  geom_boxplot(stat="identity") +
+  scale_fill_hue(l=75, guide=F) +
+  scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
+  #scale_y_continuous(breaks=comma_format(accuracy=1)) +
+  labs(title="Distirbution of Flight Times of Flights out of SFO, by Month",
+       subtitle="via US DoT. Box bounds are 25th/75th percentiles, whiskers are 5th/95th percentiles.",
+       y='Total Elapsed Flight Time (Hours)',
+       fill='',
+       color='') +
+  theme(legend.position = 'top',
+        legend.key.height = unit(0.25, unit='cm'),
+        legend.margin = margin(c(0, 0, -0.2, 0), unit='cm'),
+        axis.title.x = element_blank()
+  )
+ggsave('sfo_flight_speed.png', plot, width=6, height=4)
+```
+
+
+## By Airline
+
+To prevent clutter, only do a smaller selection of US Airlines
+
+```{r}
+airlines <- c("Alaska Airlines Inc.",
+              "Southwest Airlines Co.",
+              "Delta Air Lines Inc.",
+              "United Air Lines Inc.",
+              "American Airlines Inc.",
+              "JetBlue Airways")
+```
+
+
+```{r}
+df_flights <- read_csv('Download_Lookup.asp')
+
+df_flights %>% head(10)
+```
+
+```{r}
+query <- "#standardSQL
+SELECT Year, Month, Reporting_Airline, num_flights,
+time_q[OFFSET(5)] AS q_5,
+time_q[OFFSET(25)] AS q_25,
+time_q[OFFSET(50)] AS q_50,
+time_q[OFFSET(75)] AS q_75,
+time_q[OFFSET(95)] AS q_95
+FROM (
+SELECT Year, Month, Reporting_Airline,
+  COUNT(*) as num_flights,
+  APPROX_QUANTILES(Distance/(AirTime/60), 100) AS time_q
+FROM `fh-bigquery.flights.ontime_201903`
+WHERE Origin = 'SFO'
+AND FlightDate_year > '2010-01-01'
+GROUP BY 1, 2, 3
+)
+ORDER BY Year, Month"
+
+df <- bq_project_query(project_id, query) %>% bq_table_download()
+
+df_tf <- df %>%
+        mutate(date = ymd(paste(Year, Month, "1"))) %>%
+        left_join(df_flights, by= c("Reporting_Airline" = "Code")) %>%
+        filter(Description %in% airlines)
+
+df_tf %>% head(10)
+```
+
+```{r}
+plot <- ggplot(df_tf, aes(x=date, y=q_50, color=Description)) +
+  geom_line(stat="identity") +
+  scale_color_hue(l=55) +
+  scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
+  #scale_y_continuous(breaks=comma_format(accuracy=1)) +
+  labs(title="Median Flight Speed of Flights out of SFO, by Month and Airline",
+       subtitle="via US DoT. Box bounds are 25th/75th percentiles, whiskers are 5th/95th percentiles.",
+       y='Air Flight Speed (Miles per Hour)',
+       fill='',
+       color='') +
+  theme(legend.position = 'top',
+        legend.key.height = unit(0.25, unit='cm'),
+        legend.margin = margin(c(0, 0, -0.2, 0), unit='cm'),
+        axis.title.x = element_blank()
+  )
+ggsave('sfo_flight_speed_airline.png', plot, width=6, height=4)
+```
+
+# LICENSE
+
+MIT License
+
+Copyright (c) 2019 Max Woolf
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
