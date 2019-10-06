@@ -1,16 +1,11 @@
 ---
 title: "Why are U.S. Flights Becoming Longer at Some Airports?"
 author: "Max Woolf (@minimaxir)"
-output:
-  html_notebook:
-    highlight: tango
-    mathjax: null
-    number_sections: yes
-    theme: spacelab
-    toc: True
 ---
 
 This notebook is licensed under the MIT License. If you use the code or data visualization designs contained within this notebook, it would be greatly appreciated if proper attribution is given back to this notebook and/or myself. Thanks! :)
+
+Via https://twitter.com/felipehoffa/status/1111050585120206848
 
 ## Setup
 
@@ -42,13 +37,13 @@ theme_set(theme_minimal(base_size=9, base_family="Source Sans Pro") +
                   legend.key.width = unit(0.25, unit='cm')))
 ```
 
-
 # EDA
 
 ## SFO Flight Duration
 
 ```{r}
-query <- "#standardSQL
+query <- "
+#standardSQL
 SELECT Year, Month, num_flights,
 time_q[OFFSET(5)] AS q_5,
 time_q[OFFSET(25)] AS q_25,
@@ -58,39 +53,92 @@ time_q[OFFSET(95)] AS q_95
 FROM (
 SELECT Year, Month,
   COUNT(*) as num_flights,
-  APPROX_QUANTILES(ActualElapsedTime, 100) AS time_q
-FROM `fh-bigquery.flights.ontime_201903`
+  APPROX_QUANTILES(ActualElapsedTime/60, 100) AS time_q
+FROM `fh-bigquery.flights.ontime_201908`
 WHERE Origin = 'SFO'
+AND Dest = 'SEA'
 AND FlightDate_year > '2010-01-01'
-GROUP BY 1, 2
+GROUP BY Year, Month
 )
-ORDER BY Year, Month"
+ORDER BY Year, Month
+"
 
 df <- bq_project_query(project_id, query) %>% bq_table_download()
 
+# ggplot2 likes a date for timeseries
 df_tf <- df %>%
-          mutate(date = ymd(paste(Year, Month, "1")))
+          mutate(date = ymd(paste(Year, Month, "1")),
+                 year_factor = factor(as.numeric(Year)))
 
 df_tf %>% head(10)
 ```
 
+NB: As of ggplot 3.2.0, you must have the `group` aesthetic for boxplots manually specifying the bounds. (https://stackoverflow.com/q/57192727)
+
 ```{r}
-plot <- ggplot(df_tf, aes(x=date, lower = q_25, upper = q_75, middle=q_50, ymin=q_5, ymax=q_95, fill=factor(Year))) +
-  geom_boxplot(stat="identity") +
-  scale_fill_hue(l=75, guide=F) +
+plot <-
+  ggplot(df_tf,
+         aes(
+           x = date,
+           ymin = q_5,
+           lower = q_25,
+           middle = q_50,
+           upper = q_75,
+           ymax = q_95,
+           group = date,
+           fill = year_factor
+         )) +
+  geom_boxplot(stat = "identity") +
+  scale_fill_hue(l=50, guide=F) +
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
-  scale_y_continuous(breaks=seq(0, 360, 60), labels=seq(0, 6, 1)) +
-  labs(title="Distirbution of Flight Times of Flights out of SFO, by Month",
-       subtitle="via US DoT. Box bounds are 25th/75th percentiles, whiskers are 5th/95th percentiles.",
-       y='Total Elapsed Flight Time (Hours)',
-       fill='',
-       color='') +
-  theme(legend.position = 'top',
-        legend.key.height = unit(0.25, unit='cm'),
-        legend.margin = margin(c(0, 0, -0.2, 0), unit='cm'),
-        axis.title.x = element_blank()
-  )
-ggsave('sfo_flight_duration.png', plot, width=6, height=4)
+  scale_y_continuous(breaks = pretty_breaks(6)) +
+  labs(
+    title = "Distribution of Flight Times of Flights From SFO to SEA, by Month",
+    subtitle = "via US DoT. Box bounds are 25th/75th percentiles, whiskers are 5th/95th percentiles.",
+    y = 'Total Elapsed Flight Time (Hours)',
+    fill = '',
+    caption = 'Max Woolf — minimaxir.com'
+  ) +
+  theme(axis.title.x = element_blank())
+
+ggsave('sfo_sea_flight_duration.png',
+       plot,
+       width = 6,
+       height = 4)
+```
+
+Alternate approach using ribbons (not used in final blog post since harder to visually parse):
+
+```{r}
+plot <-
+  ggplot(df_tf,
+         aes(
+           x = date,
+           #group = "all",
+           color = year_factor,
+           fill = year_factor
+         )) +
+  geom_ribbon(aes(ymin = q_5, ymax = q_95), alpha=0.3, size=0, stat = "identity") +
+  geom_ribbon(aes(ymin = q_25, ymax = q_75), alpha=0.3, size=0, stat = "identity") +
+  geom_line(aes(y = q_50), stat = "identity") +
+  scale_color_hue(l=50, guide=F) +
+  scale_fill_hue(l=50, guide=F) +
+  scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
+  scale_y_continuous(breaks = pretty_breaks(6)) +
+  labs(
+    title = "Distribution of Flight Times of Flights From SFO to SEA, by Month",
+    subtitle = "via US DoT. Box bounds are 25th/75th percentiles, whiskers are 5th/95th percentiles.",
+    y = 'Total Elapsed Flight Time (Hours)',
+    fill = '',
+    color = '',
+    caption = 'Max Woolf — minimaxir.com'
+  ) +
+  theme(axis.title.x = element_blank())
+
+ggsave('sfo_sea_flight_duration_ribbon.png',
+       plot,
+       width = 6,
+       height = 4)
 ```
 
 ## SFO Flight Speed
