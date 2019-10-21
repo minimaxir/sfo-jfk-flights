@@ -1,5 +1,5 @@
 ---
-title: "Why are U.S. Flights Becoming Longer at Some Airports?"
+title: "Visualizing Airline Flight Characteristics Between SFO and JFK"
 author: "Max Woolf (@minimaxir)"
 ---
 
@@ -94,7 +94,7 @@ plot <-
   scale_y_continuous(breaks = pretty_breaks(6)) +
   labs(
     title = "Distribution of Flight Times of Flights From SFO to SEA, by Month",
-    subtitle = "via US DoT. Box bounds are 25th/75th percentiles, whiskers are 5th/95th percentiles.",
+    subtitle = "via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
     y = 'Total Elapsed Flight Time (Hours)',
     fill = '',
     caption = 'Max Woolf — minimaxir.com'
@@ -126,8 +126,8 @@ plot <-
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   scale_y_continuous(breaks = pretty_breaks(6)) +
   labs(
-    title = "Distribution of Flight Times of Flights From SFO to SEA, by Month",
-    subtitle = "via US DoT. Box bounds are 25th/75th percentiles, whiskers are 5th/95th percentiles.",
+    title = "Distribution of Flight Times of Airline Flights From SFO to SEA, by Month",
+    subtitle = "via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles",
     y = 'Total Elapsed Flight Time (Hours)',
     fill = '',
     color = '',
@@ -141,7 +141,7 @@ ggsave('sfo_sea_flight_duration_ribbon.png',
        height = 4)
 ```
 
-## Bay Area → NYC Distribution
+## SFO → JFK Distribution
 
 ```{r}
 query <- "
@@ -192,21 +192,21 @@ plot <-
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   scale_y_continuous(breaks = pretty_breaks(6)) +
   labs(
-    title = "Distribution of Flight Times of Flights From Bay Area to NYC, by Month",
-    subtitle = "via US DoT. Box bounds are 25th/75th percentiles, whiskers are 5th/95th percentiles.",
+    title = "Distribution of Flight Times of Flights From SFO to JFK, by Month",
+    subtitle = "via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
     y = 'Total Elapsed Flight Time (Hours)',
     fill = '',
     caption = 'Max Woolf — minimaxir.com'
   ) +
   theme(axis.title.x = element_blank())
 
-ggsave('bay_nyc_flight_duration.png',
+ggsave('sfo_jfk_flight_duration.png',
        plot,
        width = 6,
        height = 4)
 ```
 
-## NYC → Bay Area Distribution
+## JFK → SFO Distribution
 
 ```{r}
 query <- "
@@ -259,8 +259,8 @@ plot <-
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   scale_y_continuous(breaks = pretty_breaks(6)) +
   labs(
-    title = "Distribution of Flight Times of Flights From NYC to Bay Area, by Month",
-    subtitle = "via US DoT. Box bounds are 25th/75th percentiles, whiskers are 5th/95th percentiles.",
+    title = "Distribution of Flight Times of Flights From JFK to SFO, by Month",
+    subtitle = "via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
     y = 'Total Elapsed Flight Time (Hours)',
     fill = '',
     caption = 'Max Woolf — minimaxir.com'
@@ -327,7 +327,7 @@ plot <-
   facet_wrap(~ Route, nrow=1) +
   labs(
     title = "Distribution of Flight Times of Flights From Bay Area to NYC, by Month",
-    subtitle = "via US DoT. Box bounds are 25th/75th percentiles, whiskers are 5th/95th percentiles.",
+    subtitle = "via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
     y = 'Total Elapsed Flight Time (Hours)',
     fill = '',
     caption = 'Max Woolf — minimaxir.com'
@@ -376,7 +376,7 @@ plot <- ggplot(df_tf, aes(x=date, lower = q_25, upper = q_75, middle=q_50, ymin=
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   #scale_y_continuous(breaks=comma_format(accuracy=1)) +
   labs(title="Distirbution of Flight Times of Flights out of SFO, by Month",
-       subtitle="via US DoT. Box bounds are 25th/75th percentiles, whiskers are 5th/95th percentiles.",
+       subtitle="via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
        y='Total Elapsed Flight Time (Hours)',
        fill='',
        color='') +
@@ -445,7 +445,7 @@ plot <- ggplot(df_tf, aes(x=date, y=q_50, color=Description)) +
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   #scale_y_continuous(breaks=comma_format(accuracy=1)) +
   labs(title="Median Flight Speed of Flights out of SFO, by Month and Airline",
-       subtitle="via US DoT. Box bounds are 25th/75th percentiles, whiskers are 5th/95th percentiles.",
+       subtitle="via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
        y='Air Flight Speed (Miles per Hour)',
        fill='',
        color='') +
