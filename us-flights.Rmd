@@ -20,7 +20,7 @@ sessionInfo()
 
 ```{r}
 # Switch to your own GCP project ID
-#project_id <- "<PROJECT_ID>"  
+project_id <- "<PROJECT_ID>"  
 ```
 
 
@@ -288,7 +288,7 @@ FROM (
 SELECT Year, Month,
   COUNT(*) as num_flights,
   APPROX_QUANTILES(Distance/(AirTime/60), 100) AS time_q
-FROM `fh-bigquery.flights.ontime_201903`
+FROM `fh-bigquery.flights.ontime_201908`
 WHERE Origin = 'SFO'
 AND Dest = 'JFK'
 AND FlightDate_year > '2010-01-01'
@@ -351,7 +351,7 @@ FROM (
 SELECT Year, Month,
   COUNT(*) as num_flights,
   APPROX_QUANTILES(Distance/(AirTime/60), 100) AS time_q
-FROM `fh-bigquery.flights.ontime_201903`
+FROM `fh-bigquery.flights.ontime_201908`
 WHERE Origin = 'JFK'
 AND Dest = 'SFO'
 AND FlightDate_year > '2010-01-01'
@@ -400,6 +400,168 @@ ggsave('jfk_sfo_flight_speed.png',
        height = 4)
 ```
 
+## SFO → JFK Departure Delay
+
+```{r}
+query <- "#standardSQL
+SELECT Year, Month, num_flights,
+time_q[OFFSET(5)] AS q_5,
+time_q[OFFSET(25)] AS q_25,
+time_q[OFFSET(50)] AS q_50,
+time_q[OFFSET(75)] AS q_75,
+time_q[OFFSET(95)] AS q_95
+FROM (
+SELECT Year, Month,
+  COUNT(*) as num_flights,
+  APPROX_QUANTILES(DepDelay, 100) AS time_q
+FROM `fh-bigquery.flights.ontime_201908`
+WHERE Origin = 'SFO'
+AND Dest = 'JFK'
+AND FlightDate_year > '2010-01-01'
+GROUP BY 1, 2
+)
+ORDER BY Year, Month"
+
+df <- bq_project_query(project_id, query) %>% bq_table_download()
+
+df_tf <- df %>%
+          mutate(date = ymd(paste(Year, Month, "1")),
+                 year_factor = factor(as.numeric(Year)))
+
+df_tf %>% head(10)
+```
+
+```{r}
+plot <-
+  ggplot(df_tf,
+         aes(
+           x = date,
+           ymin = q_5,
+           lower = q_25,
+           middle = q_50,
+           upper = q_75,
+           ymax = q_95,
+           group = date,
+           fill = year_factor
+         )) +
+  geom_hline(yintercept=0, linetype='dashed', color="gray") +
+  geom_boxplot(stat = "identity") +
+  scale_fill_brewer(palette="Spectral", guide=F) +
+  scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
+  scale_y_continuous(breaks = pretty_breaks(6)) +
+  labs(
+    title = "Distribution of Departure Delays of Flights From SFO → JFK, by Month",
+    subtitle = "via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
+    y = 'Departure Delay (Minutes)',
+    fill = '',
+    caption = 'Max Woolf — minimaxir.com'
+  ) +
+  theme(axis.title.x = element_blank())
+
+ggsave('sfo_jfk_departure_delay.png',
+       plot,
+       width = 6,
+       height = 4)
+```
+
+Remove whiskers since it distorts the graph unhelpfully.
+
+```{r}
+plot <-
+  ggplot(df_tf,
+         aes(
+           x = date,
+           ymin = q_25,
+           lower = q_25,
+           middle = q_50,
+           upper = q_75,
+           ymax = q_75,
+           group = date,
+           fill = year_factor
+         )) +
+  geom_hline(yintercept=0, linetype='dashed', color="gray") +
+  geom_boxplot(stat = "identity") +
+  scale_fill_brewer(palette="Spectral", guide=F) +
+  scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
+  scale_y_continuous(breaks = pretty_breaks(6)) +
+  labs(
+    title = "Distribution of Departure Delays of Flights From SFO → JFK, by Month",
+    subtitle = "via US DoT. Box bounds are 25th/75th quantiles.",
+    y = 'Departure Delay (Minutes)',
+    fill = '',
+    caption = 'Max Woolf — minimaxir.com'
+  ) +
+  theme(axis.title.x = element_blank())
+
+ggsave('sfo_jfk_departure_delay_nowhiskers.png',
+       plot,
+       width = 6,
+       height = 4)
+```
+
+## JFK → SFO Departure Delay
+
+```{r}
+query <- "#standardSQL
+SELECT Year, Month, num_flights,
+time_q[OFFSET(5)] AS q_5,
+time_q[OFFSET(25)] AS q_25,
+time_q[OFFSET(50)] AS q_50,
+time_q[OFFSET(75)] AS q_75,
+time_q[OFFSET(95)] AS q_95
+FROM (
+SELECT Year, Month,
+  COUNT(*) as num_flights,
+  APPROX_QUANTILES(DepDelay, 100) AS time_q
+FROM `fh-bigquery.flights.ontime_201908`
+WHERE Origin = 'JFK'
+AND Dest = 'SFO'
+AND FlightDate_year > '2010-01-01'
+GROUP BY 1, 2
+)
+ORDER BY Year, Month"
+
+df <- bq_project_query(project_id, query) %>% bq_table_download()
+
+df_tf <- df %>%
+          mutate(date = ymd(paste(Year, Month, "1")),
+                 year_factor = factor(as.numeric(Year)))
+
+df_tf %>% head(10)
+```
+
+```{r}
+plot <-
+  ggplot(df_tf,
+         aes(
+           x = date,
+           ymin = q_25,
+           lower = q_25,
+           middle = q_50,
+           upper = q_75,
+           ymax = q_75,
+           group = date,
+           fill = year_factor
+         )) +
+  geom_hline(yintercept=0, linetype='dashed', color="gray") +
+  geom_boxplot(stat = "identity") +
+  scale_fill_brewer(palette="RdYlBu", guide=F) +
+  scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
+  scale_y_continuous(breaks = pretty_breaks(6)) +
+  labs(
+    title = "Distribution of Departure Delays of Flights From JFK → SFO, by Month",
+    subtitle = "via US DoT. Box bounds are 25th/75th quantiles.",
+    y = 'Departure Delay (Minutes)',
+    fill = '',
+    caption = 'Max Woolf — minimaxir.com'
+  ) +
+  theme(axis.title.x = element_blank())
+
+ggsave('jfk_sfo_departure_delay_nowhiskers.png',
+       plot,
+       width = 6,
+       height = 4)
+```
 
 # LICENSE
 
