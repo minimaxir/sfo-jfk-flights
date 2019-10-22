@@ -1,6 +1,7 @@
 ---
 title: "Visualizing Airline Flight Characteristics Between SFO and JFK"
 author: "Max Woolf (@minimaxir)"
+date: "2019-10-23"
 ---
 
 This notebook is licensed under the MIT License. If you use the code or data visualization designs contained within this notebook, it would be greatly appreciated if proper attribution is given back to this notebook and/or myself. Thanks! :)
@@ -107,7 +108,9 @@ ggsave('sfo_sea_flight_duration.png',
        height = 4)
 ```
 
-Alternate approach using ribbons (not used in final blog post since harder to visually parse):
+![](sfo_sea_flight_duration.png)
+
+Alternate approach using ribbons (not used in final blog post since harder to visually parse, but present here for posterity):
 
 ```{r}
 plot <-
@@ -140,6 +143,8 @@ ggsave('sfo_sea_flight_duration_ribbon.png',
        width = 6,
        height = 4)
 ```
+
+![](sfo_sea_flight_duration_ribbon.png)
 
 ## SFO → JFK Distribution
 
@@ -205,6 +210,8 @@ ggsave('sfo_jfk_flight_duration.png',
        width = 6,
        height = 4)
 ```
+
+![](sfo_jfk_flight_duration.png)
 
 ## JFK → SFO Flight Time Distribution
 
@@ -273,6 +280,7 @@ ggsave('jfk_sfo_flight_duration.png',
        height = 4)
 ```
 
+![](jfk_sfo_flight_duration.png)
 
 ## SFO → JFK Flight Speed
 
@@ -337,6 +345,8 @@ ggsave('sfo_jfk_flight_speed.png',
        height = 4)
 ```
 
+![](sfo_jfk_flight_speed.png)
+
 ## JFK → SFO Flight Speed
 
 ```{r}
@@ -399,6 +409,8 @@ ggsave('jfk_sfo_flight_speed.png',
        width = 6,
        height = 4)
 ```
+
+![](jfk_sfo_flight_speed.png)
 
 ## SFO → JFK Departure Delay
 
@@ -464,6 +476,8 @@ ggsave('sfo_jfk_departure_delay.png',
        height = 4)
 ```
 
+![](sfo_jfk_departure_delay.png)
+
 Remove whiskers since it distorts the graph unhelpfully.
 
 ```{r}
@@ -498,6 +512,8 @@ ggsave('sfo_jfk_departure_delay_nowhiskers.png',
        width = 6,
        height = 4)
 ```
+
+![](sfo_jfk_departure_delay_nowhiskers.png)
 
 ## JFK → SFO Departure Delay
 
@@ -562,6 +578,8 @@ ggsave('jfk_sfo_departure_delay_nowhiskers.png',
        width = 6,
        height = 4)
 ```
+
+![](jfk_sfo_departure_delay_nowhiskers.png)
 
 # LICENSE
 
