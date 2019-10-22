@@ -206,7 +206,7 @@ ggsave('sfo_jfk_flight_duration.png',
        height = 4)
 ```
 
-## JFK → SFO Distribution
+## JFK → SFO Flight Time Distribution
 
 ```{r}
 query <- "
@@ -274,73 +274,7 @@ ggsave('jfk_sfo_flight_duration.png',
 ```
 
 
-## Bay Area → NYC Distribution by Route
-
-```{r}
-query <- "
-#standardSQL
-SELECT Year, Month, Route, num_flights,
-time_q[OFFSET(5)] AS q_5,
-time_q[OFFSET(25)] AS q_25,
-time_q[OFFSET(50)] AS q_50,
-time_q[OFFSET(75)] AS q_75,
-time_q[OFFSET(95)] AS q_95
-FROM (
-SELECT Year, Month, CONCAT(Origin, ' → ', Dest) as Route,
-  COUNT(*) as num_flights,
-  APPROX_QUANTILES(ActualElapsedTime/60, 100) AS time_q
-FROM `fh-bigquery.flights.ontime_201908`
-WHERE Origin = 'SFO'
-AND Dest = 'JFK'
-AND FlightDate_year > '2016-01-01'
-GROUP BY Year, Month, Route
-)
-ORDER BY Route, Year, Month
-"
-
-df <- bq_project_query(project_id, query) %>% bq_table_download()
-
-df_tf <- df %>%
-          mutate(date = ymd(paste(Year, Month, "1")),
-                 year_factor = factor(as.numeric(Year)))
-
-df_tf %>% head(10)
-```
-
-```{r}
-plot <-
-  ggplot(df_tf,
-         aes(
-           x = date,
-           ymin = q_5,
-           lower = q_25,
-           middle = q_50,
-           upper = q_75,
-           ymax = q_95,
-           group = date,
-           fill = year_factor
-         )) +
-  geom_boxplot(stat = "identity") +
-  scale_fill_hue(l=50, guide=F) +
-  scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
-  scale_y_continuous(breaks = pretty_breaks(6)) +
-  facet_wrap(~ Route, nrow=1) +
-  labs(
-    title = "Distribution of Flight Times of Flights From Bay Area to NYC, by Month",
-    subtitle = "via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
-    y = 'Total Elapsed Flight Time (Hours)',
-    fill = '',
-    caption = 'Max Woolf — minimaxir.com'
-  ) +
-  theme(axis.title.x = element_blank())
-
-ggsave('bay_nyc_route_flight_duration.png',
-       plot,
-       width = 6,
-       height = 4)
-```
-
-## SFO Flight Speed
+## SFO → JFK Flight Speed
 
 ```{r}
 query <- "#standardSQL
@@ -365,98 +299,107 @@ ORDER BY Year, Month"
 df <- bq_project_query(project_id, query) %>% bq_table_download()
 
 df_tf <- df %>%
-          mutate(date = ymd(paste(Year, Month, "1")))
+          mutate(date = ymd(paste(Year, Month, "1")),
+                 year_factor = factor(as.numeric(Year)))
 
 df_tf %>% head(10)
 ```
 
 ```{r}
-plot <- ggplot(df_tf, aes(x=date, lower = q_25, upper = q_75, middle=q_50, ymin=q_5, ymax=q_95, fill=factor(Year))) +
-  geom_boxplot(stat="identity") +
-  scale_fill_hue(l=75, guide=F) +
+plot <-
+  ggplot(df_tf,
+         aes(
+           x = date,
+           ymin = q_5,
+           lower = q_25,
+           middle = q_50,
+           upper = q_75,
+           ymax = q_95,
+           group = date,
+           fill = year_factor
+         )) +
+  geom_boxplot(stat = "identity") +
+  scale_fill_brewer(palette="Spectral", guide=F) +
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
-  #scale_y_continuous(breaks=comma_format(accuracy=1)) +
-  labs(title="Distirbution of Flight Speeds of Flights out of SFO, by Month",
-       subtitle="via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
-       y='Flight Speed (Miles per Hour)',
-       fill='',
-       color='') +
-  theme(legend.position = 'top',
-        legend.key.height = unit(0.25, unit='cm'),
-        legend.margin = margin(c(0, 0, -0.2, 0), unit='cm'),
-        axis.title.x = element_blank()
-  )
-ggsave('sfo_jfk_flight_speed.png', plot, width=6, height=4)
+  scale_y_continuous(breaks = pretty_breaks(6)) +
+  labs(
+    title = "Distribution of Flight Speeds of Flights From SFO → JFK, by Month",
+    subtitle = "via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
+    y = 'Average Plane Flight Speed (Miles Per Hour)',
+    fill = '',
+    caption = 'Max Woolf — minimaxir.com'
+  ) +
+  theme(axis.title.x = element_blank())
+
+ggsave('sfo_jfk_flight_speed.png',
+       plot,
+       width = 6,
+       height = 4)
 ```
 
-
-## By Airline
-
-To prevent clutter, only do a smaller selection of US Airlines
-
-```{r}
-airlines <- c("Alaska Airlines Inc.",
-              "Southwest Airlines Co.",
-              "Delta Air Lines Inc.",
-              "United Air Lines Inc.",
-              "American Airlines Inc.",
-              "JetBlue Airways")
-```
-
-
-```{r}
-df_flights <- read_csv('Download_Lookup.asp')
-
-df_flights %>% head(10)
-```
+## JFK → SFO Flight Speed
 
 ```{r}
 query <- "#standardSQL
-SELECT Year, Month, Reporting_Airline, num_flights,
+SELECT Year, Month, num_flights,
 time_q[OFFSET(5)] AS q_5,
 time_q[OFFSET(25)] AS q_25,
 time_q[OFFSET(50)] AS q_50,
 time_q[OFFSET(75)] AS q_75,
 time_q[OFFSET(95)] AS q_95
 FROM (
-SELECT Year, Month, Reporting_Airline,
+SELECT Year, Month,
   COUNT(*) as num_flights,
   APPROX_QUANTILES(Distance/(AirTime/60), 100) AS time_q
 FROM `fh-bigquery.flights.ontime_201903`
-WHERE Origin = 'SFO'
+WHERE Origin = 'JFK'
+AND Dest = 'SFO'
 AND FlightDate_year > '2010-01-01'
-GROUP BY 1, 2, 3
+GROUP BY 1, 2
 )
 ORDER BY Year, Month"
 
 df <- bq_project_query(project_id, query) %>% bq_table_download()
 
 df_tf <- df %>%
-        mutate(date = ymd(paste(Year, Month, "1"))) %>%
-        left_join(df_flights, by= c("Reporting_Airline" = "Code")) %>%
-        filter(Description %in% airlines)
+          mutate(date = ymd(paste(Year, Month, "1")),
+                 year_factor = factor(as.numeric(Year)))
 
 df_tf %>% head(10)
 ```
 
 ```{r}
-plot <- ggplot(df_tf, aes(x=date, y=q_50, color=Description)) +
-  geom_line(stat="identity") +
-  scale_color_hue(l=55) +
+plot <-
+  ggplot(df_tf,
+         aes(
+           x = date,
+           ymin = q_5,
+           lower = q_25,
+           middle = q_50,
+           upper = q_75,
+           ymax = q_95,
+           group = date,
+           fill = year_factor
+         )) +
+  geom_boxplot(stat = "identity") +
+  scale_fill_brewer(palette="RdYlBu", guide=F) +
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
-  #scale_y_continuous(breaks=comma_format(accuracy=1)) +
-  labs(title="Median Flight Speed of Flights out of SFO, by Month and Airline",
-       subtitle="via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
-       y='Air Flight Speed (Miles per Hour)',
-       fill='',
-       color='') +
-  theme(legend.position = 'top',
-        legend.key.height = unit(0.25, unit='cm'),
-        legend.margin = margin(c(0, 0, -0.2, 0), unit='cm'),
-        axis.title.x = element_blank()
-  )
-ggsave('sfo_flight_speed_airline.png', plot, width=6, height=4)
+  scale_y_continuous(breaks = pretty_breaks(6)) +
+  labs(
+    title = "Distribution of Flight Speeds of Flights From JFK → SFO, by Month",
+    subtitle = "via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
+    y = 'Average Plane Flight Speed (Miles Per Hour)',
+    fill = '',
+    caption = 'Max Woolf — minimaxir.com'
+  ) +
+  theme(axis.title.x = element_blank())
+
+ggsave('jfk_sfo_flight_speed.png',
+       plot,
+       width = 6,
+       height = 4)
 ```
+
 
 # LICENSE
 
