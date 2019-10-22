@@ -53,7 +53,7 @@ time_q[OFFSET(95)] AS q_95
 FROM (
 SELECT Year, Month,
   COUNT(*) as num_flights,
-  APPROX_QUANTILES(ActualElapsedTime/60, 100) AS time_q
+  APPROX_QUANTILES(ActualElapsedTime, 100) AS time_q
 FROM `fh-bigquery.flights.ontime_201908`
 WHERE Origin = 'SFO'
 AND Dest = 'SEA'
@@ -93,9 +93,9 @@ plot <-
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   scale_y_continuous(breaks = pretty_breaks(6)) +
   labs(
-    title = "Distribution of Flight Times of Flights From SFO to SEA, by Month",
+    title = "Distribution of Flight Times of Flights From SFO → SEA, by Month",
     subtitle = "via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
-    y = 'Total Elapsed Flight Time (Hours)',
+    y = 'Total Elapsed Flight Time (Minutes)',
     fill = '',
     caption = 'Max Woolf — minimaxir.com'
   ) +
@@ -126,9 +126,9 @@ plot <-
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   scale_y_continuous(breaks = pretty_breaks(6)) +
   labs(
-    title = "Distribution of Flight Times of Airline Flights From SFO to SEA, by Month",
+    title = "Distribution of Flight Times of Airline Flights From SFO → SEA, by Month",
     subtitle = "via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles",
-    y = 'Total Elapsed Flight Time (Hours)',
+    y = 'Total Elapsed Flight Time (Minutes)',
     fill = '',
     color = '',
     caption = 'Max Woolf — minimaxir.com'
@@ -155,10 +155,10 @@ time_q[OFFSET(95)] AS q_95
 FROM (
 SELECT Year, Month,
   COUNT(*) as num_flights,
-  APPROX_QUANTILES(ActualElapsedTime/60, 100) AS time_q
+  APPROX_QUANTILES(ActualElapsedTime, 100) AS time_q
 FROM `fh-bigquery.flights.ontime_201908`
-WHERE Origin IN 'SFO'
-AND Dest IN 'JFK'
+WHERE Origin = 'SFO'
+AND Dest = 'JFK'
 AND FlightDate_year > '2010-01-01'
 GROUP BY Year, Month
 )
@@ -188,13 +188,13 @@ plot <-
            fill = year_factor
          )) +
   geom_boxplot(stat = "identity") +
-  scale_fill_hue(l=50, guide=F) +
+  scale_fill_brewer(palette="Spectral", guide=F) +
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   scale_y_continuous(breaks = pretty_breaks(6)) +
   labs(
-    title = "Distribution of Flight Times of Flights From SFO to JFK, by Month",
+    title = "Distribution of Flight Times of Flights From SFO → JFK, by Month",
     subtitle = "via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
-    y = 'Total Elapsed Flight Time (Hours)',
+    y = 'Total Elapsed Flight Time (Minutes)',
     fill = '',
     caption = 'Max Woolf — minimaxir.com'
   ) +
@@ -220,7 +220,7 @@ time_q[OFFSET(95)] AS q_95
 FROM (
 SELECT Year, Month,
   COUNT(*) as num_flights,
-  APPROX_QUANTILES(ActualElapsedTime/60, 100) AS time_q
+  APPROX_QUANTILES(ActualElapsedTime, 100) AS time_q
 FROM `fh-bigquery.flights.ontime_201908`
 WHERE Origin = 'JFK'
 AND Dest = 'SFO'
@@ -255,19 +255,19 @@ plot <-
            fill = year_factor
          )) +
   geom_boxplot(stat = "identity") +
-  scale_fill_hue(l=50, guide=F) +
+  scale_fill_brewer(palette="RdYlBu", guide=F) +
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   scale_y_continuous(breaks = pretty_breaks(6)) +
   labs(
-    title = "Distribution of Flight Times of Flights From JFK to SFO, by Month",
+    title = "Distribution of Flight Times of Flights From JFK → SFO, by Month",
     subtitle = "via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
-    y = 'Total Elapsed Flight Time (Hours)',
+    y = 'Total Elapsed Flight Time (Minutes)',
     fill = '',
     caption = 'Max Woolf — minimaxir.com'
   ) +
   theme(axis.title.x = element_blank())
 
-ggsave('nyc_bay_flight_duration.png',
+ggsave('jfk_sfo_flight_duration.png',
        plot,
        width = 6,
        height = 4)
@@ -291,7 +291,7 @@ SELECT Year, Month, CONCAT(Origin, ' → ', Dest) as Route,
   APPROX_QUANTILES(ActualElapsedTime/60, 100) AS time_q
 FROM `fh-bigquery.flights.ontime_201908`
 WHERE Origin = 'SFO'
-AND Dest IN ('JFK', 'LGA', 'EWR')
+AND Dest = 'JFK'
 AND FlightDate_year > '2016-01-01'
 GROUP BY Year, Month, Route
 )
@@ -356,6 +356,7 @@ SELECT Year, Month,
   APPROX_QUANTILES(Distance/(AirTime/60), 100) AS time_q
 FROM `fh-bigquery.flights.ontime_201903`
 WHERE Origin = 'SFO'
+AND Dest = 'JFK'
 AND FlightDate_year > '2010-01-01'
 GROUP BY 1, 2
 )
@@ -375,9 +376,9 @@ plot <- ggplot(df_tf, aes(x=date, lower = q_25, upper = q_75, middle=q_50, ymin=
   scale_fill_hue(l=75, guide=F) +
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   #scale_y_continuous(breaks=comma_format(accuracy=1)) +
-  labs(title="Distirbution of Flight Times of Flights out of SFO, by Month",
+  labs(title="Distirbution of Flight Speeds of Flights out of SFO, by Month",
        subtitle="via US DoT. Box bounds are 25th/75th quantiles, whiskers are 5th/95th quantiles.",
-       y='Total Elapsed Flight Time (Hours)',
+       y='Flight Speed (Miles per Hour)',
        fill='',
        color='') +
   theme(legend.position = 'top',
@@ -385,7 +386,7 @@ plot <- ggplot(df_tf, aes(x=date, lower = q_25, upper = q_75, middle=q_50, ymin=
         legend.margin = margin(c(0, 0, -0.2, 0), unit='cm'),
         axis.title.x = element_blank()
   )
-ggsave('sfo_flight_speed.png', plot, width=6, height=4)
+ggsave('sfo_jfk_flight_speed.png', plot, width=6, height=4)
 ```
 
 
