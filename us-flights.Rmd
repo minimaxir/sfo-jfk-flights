@@ -2,6 +2,13 @@
 title: "Visualizing Airline Flight Characteristics Between SFO and JFK"
 author: "Max Woolf (@minimaxir)"
 date: "2019-10-23"
+output:
+  html_notebook:
+    highlight: tango
+    mathjax: null
+    number_sections: yes
+    theme: spacelab
+    toc: True
 ---
 
 This notebook is licensed under the MIT License. If you use the code or data visualization designs contained within this notebook, it would be greatly appreciated if proper attribution is given back to this notebook and/or myself. Thanks! :)
@@ -89,7 +96,7 @@ plot <-
            group = date,
            fill = year_factor
          )) +
-  geom_boxplot(stat = "identity") +
+  geom_boxplot(stat = "identity", size=0.3) +
   scale_fill_hue(l=50, guide=F) +
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   scale_y_continuous(breaks = pretty_breaks(6)) +
@@ -192,8 +199,8 @@ plot <-
            group = date,
            fill = year_factor
          )) +
-  geom_boxplot(stat = "identity") +
-  scale_fill_brewer(palette="Spectral", guide=F) +
+  geom_boxplot(stat = "identity", size=0.3) +
+  scale_fill_hue(l=50, guide=F, h.start=180, direction=1) +
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   scale_y_continuous(breaks = pretty_breaks(6)) +
   labs(
@@ -261,8 +268,8 @@ plot <-
            group = date,
            fill = year_factor
          )) +
-  geom_boxplot(stat = "identity") +
-  scale_fill_brewer(palette="RdYlBu", guide=F) +
+  geom_boxplot(stat = "identity", size=0.3) +
+  scale_fill_hue(l=50, guide=F, h.start=180, direction=-1) +
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   scale_y_continuous(breaks = pretty_breaks(6)) +
   labs(
@@ -326,8 +333,8 @@ plot <-
            group = date,
            fill = year_factor
          )) +
-  geom_boxplot(stat = "identity") +
-  scale_fill_brewer(palette="Spectral", guide=F) +
+  geom_boxplot(stat = "identity", size=0.3) +
+  scale_fill_hue(l=50, guide=F, h.start=180, direction=1) +
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   scale_y_continuous(breaks = pretty_breaks(6)) +
   labs(
@@ -391,8 +398,8 @@ plot <-
            group = date,
            fill = year_factor
          )) +
-  geom_boxplot(stat = "identity") +
-  scale_fill_brewer(palette="RdYlBu", guide=F) +
+  geom_boxplot(stat = "identity", size=0.3) +
+  scale_fill_hue(l=50, guide=F, h.start=180, direction=-1) +
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   scale_y_continuous(breaks = pretty_breaks(6)) +
   labs(
@@ -457,8 +464,8 @@ plot <-
            fill = year_factor
          )) +
   geom_hline(yintercept=0, linetype='dashed', color="gray") +
-  geom_boxplot(stat = "identity") +
-  scale_fill_brewer(palette="Spectral", guide=F) +
+  geom_boxplot(stat = "identity", size=0.3) +
+  scale_fill_hue(l=50, guide=F, h.start=180, direction=1) +
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   scale_y_continuous(breaks = pretty_breaks(6)) +
   labs(
@@ -494,8 +501,8 @@ plot <-
            fill = year_factor
          )) +
   geom_hline(yintercept=0, linetype='dashed', color="gray") +
-  geom_boxplot(stat = "identity") +
-  scale_fill_brewer(palette="Spectral", guide=F) +
+  geom_boxplot(stat = "identity", size=0.3) +
+  scale_fill_hue(l=50, guide=F, h.start=180, direction=1) +
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   scale_y_continuous(breaks = pretty_breaks(6)) +
   labs(
@@ -560,8 +567,8 @@ plot <-
            fill = year_factor
          )) +
   geom_hline(yintercept=0, linetype='dashed', color="gray") +
-  geom_boxplot(stat = "identity") +
-  scale_fill_brewer(palette="RdYlBu", guide=F) +
+  geom_boxplot(stat = "identity", size=0.3) +
+  scale_fill_hue(l=50, guide=F, h.start=180, direction=-1) +
   scale_x_date(date_breaks = '1 year', date_labels = "%Y") +
   scale_y_continuous(breaks = pretty_breaks(6)) +
   labs(
