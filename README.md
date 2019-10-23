@@ -1,4 +1,6 @@
-# us-flights-bay-nyc
+# sfo-jfk-flights
+
+Complement to my blog post Visualizing Airline Flight Characteristics Between SFO and JFK
 
 ## Maintainer/Creator
 
